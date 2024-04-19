@@ -2,6 +2,7 @@
 
 #include "mbed.h"
 #include "arm_book_lib.h"
+//#include <string.h>
 
 //=====[Defines]===============================================================//
 
@@ -30,6 +31,12 @@ DigitalOut systemBlockedLed(LED2);
 DigitalInOut sirenPin(PE_10);
 
 UnbufferedSerial uartUsb(USBTX, USBRX, 115200);
+
+// Clase: AnalogIn
+// Objetos: potentiometer, lm35
+// Constructores: AnalogIn
+// Métodos: read(), readu16(), read_voltage(), set_reference_voltage(), get_reference_voltage()
+
 
 AnalogIn potentiometer(A0);
 AnalogIn lm35(A1);
