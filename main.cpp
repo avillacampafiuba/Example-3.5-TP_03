@@ -30,14 +30,17 @@ DigitalOut systemBlockedLed(LED2);
 
 DigitalInOut sirenPin(PE_10);
 
+// Clase: UnbufferedSerial
+// Objeto: uartUsb
+// Constructores: UnbufferedSerial
+// Métodos: write(), read(), seek(), size(), isatty(), close(), enable_input(), enable_output(), poll()
 UnbufferedSerial uartUsb(USBTX, USBRX, 115200);
+// Fijarse con coolterm los mensajes que imprime esto, y hablar de ventajas y desventajas contra printf
 
 // Clase: AnalogIn
 // Objetos: potentiometer, lm35
 // Constructores: AnalogIn
 // Métodos: read(), readu16(), read_voltage(), set_reference_voltage(), get_reference_voltage()
-
-
 AnalogIn potentiometer(A0);
 AnalogIn lm35(A1);
 
@@ -80,7 +83,10 @@ float analogReadingScaledWithTheLM35Formula( float analogReading );
 
 int main()
 {
+    // DigitalIn, DigitalInOut
     inputsInit();
+
+    // DigitalOut
     outputsInit();
     while (true) {
         alarmActivationUpdate();
