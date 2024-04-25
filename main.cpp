@@ -59,15 +59,12 @@ BusIn buttonBus(D4, D5, D6, D7); // Pines de los botones en un BusIn
 
 DigitalIn enterButton(BUTTON1);
 DigitalIn alarmTestButton(D2);
-//DigitalIn aButton(D4);
-//DigitalIn bButton(D5);
-//DigitalIn cButton(D6);
-//DigitalIn dButton(D7);
 DigitalIn mq2(PE_12);
 
-DigitalOut alarmLed(LED1);
-DigitalOut incorrectCodeLed(LED3);
-DigitalOut systemBlockedLed(LED2);
+BusOut leds(LED1, LED2, LED3);
+//DigitalOut alarmLed(LED1);
+//DigitalOut incorrectCodeLed(LED3);
+//DigitalOut systemBlockedLed(LED2);
 
 DigitalInOut sirenPin(PE_10);
 
@@ -151,12 +148,21 @@ void inputsInit()
     sirenPin.input();
 }
 
+#if TEST_X == TEST_ORIGINAL
 void outputsInit()
 {
     alarmLed = OFF;
     incorrectCodeLed = OFF;
     systemBlockedLed = OFF;
 }
+#endif  //TEST_ORIGINAL
+
+#if TEST_X == TEST_1
+void outputsInit()
+{
+    leds.write(0b000);
+}
+#endif  //TEST_1
 
 void alarmActivationUpdate()
 {
@@ -203,7 +209,8 @@ void alarmActivationUpdate()
         if( gasDetectorState && overTempDetectorState ) {
             if( accumulatedTimeAlarm >= BLINKING_TIME_GAS_AND_OVER_TEMP_ALARM ) {
                 accumulatedTimeAlarm = 0;
-                alarmLed = !alarmLed;
+                //alarmLed = !alarmLed;
+                leds.write( !(leds.read() & 0b100) & )
             }
         } else if( gasDetectorState ) {
             if( accumulatedTimeAlarm >= BLINKING_TIME_GAS_ALARM ) {
