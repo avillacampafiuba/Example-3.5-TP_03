@@ -9,7 +9,7 @@
 // Configuro compilación condicional:
 #define TEST_ORIGINAL 0 
 #define TEST_1 1 
-#define TEST_X (TEST_1) 
+#define TEST_X (TEST_ORIGINAL) 
 
 #define NUMBER_OF_KEYS                           4
 #define BLINKING_TIME_GAS_ALARM               1000
@@ -133,6 +133,9 @@ void inputsInit()
 {
     alarmTestButton.mode(PullDown);
 
+    // Le ponemos PullDown porque usamos un boton, no el sensor
+    mq2.mode(PullDown);
+
     #if TEST_X == TEST_1
     buttonBus.mode(PullDown);
     #endif//TEST_1
@@ -188,7 +191,7 @@ void alarmActivationUpdate()
         overTempDetector = OFF;
     }
 
-    if( !mq2) {
+    if( mq2) {
         gasDetectorState = ON;
         alarmState = ON;
     }
@@ -210,7 +213,9 @@ void alarmActivationUpdate()
             if( accumulatedTimeAlarm >= BLINKING_TIME_GAS_AND_OVER_TEMP_ALARM ) {
                 accumulatedTimeAlarm = 0;
                 //alarmLed = !alarmLed;
-                leds.write( !(leds.read() & 0b100) & )
+                int lectura_leds = leds.read();
+                int lectura_alarmLed = (lectura_leds & 0b100) >> 2;
+                leds.write( (!lectura_alarmLed << 2) | (lectura_leds & 0b011));
             }
         } else if( gasDetectorState ) {
             if( accumulatedTimeAlarm >= BLINKING_TIME_GAS_ALARM ) {
@@ -269,9 +274,9 @@ void alarmDeactivationUpdate()
             //buttonsPressed[1] = bButton;
             //buttonsPressed[2] = cButton;
             //buttonsPressed[3] = dButton;
-            buttonsPressed[0] = buttonBus & 0b1000;
-            buttonsPressed[1] = buttonBus & 0b0100;
-            buttonsPressed[2] = buttonBus & 0b0010;
+            buttonsPressed[0] = (buttonBus & 0b1000) >> 3;
+            buttonsPressed[1] = (buttonBus & 0b0100) >> 2;
+            buttonsPressed[2] = (buttonBus & 0b0010) >> 1;
             buttonsPressed[3] = buttonBus & 0b0001;
             if ( areEqual() ) {
                 alarmState = OFF;
@@ -304,7 +309,7 @@ void uartTask()
             break;
 
         case '2':
-            if ( !mq2 ) {
+            if ( mq2 ) {
                 uartUsb.write( "Gas is being detected\r\n", 22);
             } else {
                 uartUsb.write( "Gas is not being detected\r\n", 27);
