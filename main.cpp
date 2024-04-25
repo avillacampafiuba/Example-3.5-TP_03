@@ -6,6 +6,11 @@
 
 //=====[Defines]===============================================================//
 
+// Configuro compilación condicional:
+#define TEST_ORIGINAL 0 
+#define TEST_1 1 
+#define TEST_X (TEST_1) 
+
 #define NUMBER_OF_KEYS                           4
 #define BLINKING_TIME_GAS_ALARM               1000
 #define BLINKING_TIME_OVER_TEMP_ALARM          500
@@ -15,6 +20,8 @@
 #define TIME_INCREMENT_MS                       10
 
 //=====[Declaration and initialization of public global objects]===============
+
+#if (TEST_X == TEST_ORIGINAL)
 
 DigitalIn enterButton(BUTTON1);
 DigitalIn alarmTestButton(D2);
@@ -43,6 +50,31 @@ UnbufferedSerial uartUsb(USBTX, USBRX, 115200);
 // Métodos: read(), readu16(), read_voltage(), set_reference_voltage(), get_reference_voltage()
 AnalogIn potentiometer(A0);
 AnalogIn lm35(A1);
+
+#endif  // TEST_ORIGINAL
+
+#if (TEST_X == TEST_1)
+
+DigitalIn enterButton(BUTTON1);
+DigitalIn alarmTestButton(D2);
+DigitalIn aButton(D4);
+DigitalIn bButton(D5);
+DigitalIn cButton(D6);
+DigitalIn dButton(D7);
+DigitalIn mq2(PE_12);
+
+DigitalOut alarmLed(LED1);
+DigitalOut incorrectCodeLed(LED3);
+DigitalOut systemBlockedLed(LED2);
+
+DigitalInOut sirenPin(PE_10);
+
+UnbufferedSerial uartUsb(USBTX, USBRX, 115200);
+
+AnalogIn potentiometer(A0);
+AnalogIn lm35(A1);
+
+#endif  // TEST_1
 
 //=====[Declaration and initialization of public global variables]=============
 
