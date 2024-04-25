@@ -55,12 +55,14 @@ AnalogIn lm35(A1);
 
 #if (TEST_X == TEST_1)
 
+BusIn buttonBus(D4, D5, D6, D7); // Pines de los botones en un BusIn
+
 DigitalIn enterButton(BUTTON1);
 DigitalIn alarmTestButton(D2);
-DigitalIn aButton(D4);
-DigitalIn bButton(D5);
-DigitalIn cButton(D6);
-DigitalIn dButton(D7);
+//DigitalIn aButton(D4);
+//DigitalIn bButton(D5);
+//DigitalIn cButton(D6);
+//DigitalIn dButton(D7);
 DigitalIn mq2(PE_12);
 
 DigitalOut alarmLed(LED1);
@@ -133,10 +135,18 @@ int main()
 void inputsInit()
 {
     alarmTestButton.mode(PullDown);
+
+    #if TEST_X == TEST_1
+    buttonBus.mode(PullDown);
+    #endif//TEST_1
+
+    #if TEST_X == TEST_ORIGINAL
     aButton.mode(PullDown);
     bButton.mode(PullDown);
     cButton.mode(PullDown);
     dButton.mode(PullDown);
+    #endif  //TEST_ORIGINAL
+
     sirenPin.mode(OpenDrain);
     sirenPin.input();
 }
@@ -214,6 +224,7 @@ void alarmActivationUpdate()
     }
 }
 
+#if TEST_X == TEST_ORIGINAL
 void alarmDeactivationUpdate()
 {
     if ( numberOfIncorrectCodes < 5 ) {
@@ -237,6 +248,37 @@ void alarmDeactivationUpdate()
         systemBlockedLed = ON;
     }
 }
+#endif  //TEST_ORIGINAL
+
+#if TEST_X == TEST_1
+void alarmDeactivationUpdate()
+{
+    if ( numberOfIncorrectCodes < 5 ) {
+        if ( buttonBus == 0xF && !enterButton ) {
+            incorrectCodeLed = OFF;
+        }
+        if ( enterButton && !incorrectCodeLed && alarmState ) {
+            //buttonsPressed[0] = aButton;
+            //buttonsPressed[1] = bButton;
+            //buttonsPressed[2] = cButton;
+            //buttonsPressed[3] = dButton;
+            buttonsPressed[0] = buttonBus & 0b1000;
+            buttonsPressed[1] = buttonBus & 0b0100;
+            buttonsPressed[2] = buttonBus & 0b0010;
+            buttonsPressed[3] = buttonBus & 0b0001;
+            if ( areEqual() ) {
+                alarmState = OFF;
+                numberOfIncorrectCodes = 0;
+            } else {
+                incorrectCodeLed = ON;
+                numberOfIncorrectCodes++;
+            }
+        }
+    } else {
+        systemBlockedLed = ON;
+    }
+}
+#endif  //TEST_1
 
 void uartTask()
 {
