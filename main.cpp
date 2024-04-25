@@ -61,7 +61,7 @@ DigitalIn enterButton(BUTTON1);
 DigitalIn alarmTestButton(D2);
 DigitalIn mq2(PE_12);
 
-BusOut leds(LED1, LED2, LED3);
+BusOut leds(LED3, LED2, LED1);
 //DigitalOut alarmLed(LED1);
 //DigitalOut incorrectCodeLed(LED3);
 //DigitalOut systemBlockedLed(LED2);
@@ -167,6 +167,75 @@ void outputsInit()
 }
 #endif  //TEST_1
 
+#if TEST_X == TEST_ORIGINAL
+void alarmActivationUpdate()
+{
+    static int lm35SampleIndex = 0;
+    int i = 0;
+
+    lm35ReadingsArray[lm35SampleIndex] = lm35.read();
+    lm35SampleIndex++;
+    if ( lm35SampleIndex >= NUMBER_OF_AVG_SAMPLES) {
+        lm35SampleIndex = 0;
+    }
+    
+       lm35ReadingsSum = 0.0;
+    for (i = 0; i < NUMBER_OF_AVG_SAMPLES; i++) {
+        lm35ReadingsSum = lm35ReadingsSum + lm35ReadingsArray[i];
+    }
+    lm35ReadingsAverage = lm35ReadingsSum / NUMBER_OF_AVG_SAMPLES;
+       lm35TempC = analogReadingScaledWithTheLM35Formula ( lm35ReadingsAverage );    
+    
+    if ( lm35TempC > OVER_TEMP_LEVEL ) {
+        overTempDetector = ON;
+    } else {
+        overTempDetector = OFF;
+    }
+
+    if( mq2) {
+        gasDetectorState = ON;
+        alarmState = ON;
+    }
+    if( overTempDetector ) {
+        overTempDetectorState = ON;
+        alarmState = ON;
+    }
+    if( alarmTestButton ) {             
+        overTempDetectorState = ON;
+        gasDetectorState = ON;
+        alarmState = ON;
+    }    
+    if( alarmState ) { 
+        accumulatedTimeAlarm = accumulatedTimeAlarm + TIME_INCREMENT_MS;
+        sirenPin.output();                                     
+        sirenPin = LOW;                                        
+    
+        if( gasDetectorState && overTempDetectorState ) {
+            if( accumulatedTimeAlarm >= BLINKING_TIME_GAS_AND_OVER_TEMP_ALARM ) {
+                accumulatedTimeAlarm = 0;
+                alarmLed = !alarmLed;
+            }
+        } else if( gasDetectorState ) {
+            if( accumulatedTimeAlarm >= BLINKING_TIME_GAS_ALARM ) {
+                accumulatedTimeAlarm = 0;
+                alarmLed = !alarmLed;
+            }
+        } else if ( overTempDetectorState ) {
+            if( accumulatedTimeAlarm >= BLINKING_TIME_OVER_TEMP_ALARM  ) {
+                accumulatedTimeAlarm = 0;
+                alarmLed = !alarmLed;
+            }
+        }
+    } else{
+        alarmLed = OFF;
+        gasDetectorState = OFF;
+        overTempDetectorState = OFF;
+        sirenPin.input();                                  
+    }
+}
+#endif  //TEST_ORIGINAL
+
+#if TEST_X == TEST_1
 void alarmActivationUpdate()
 {
     static int lm35SampleIndex = 0;
@@ -220,21 +289,29 @@ void alarmActivationUpdate()
         } else if( gasDetectorState ) {
             if( accumulatedTimeAlarm >= BLINKING_TIME_GAS_ALARM ) {
                 accumulatedTimeAlarm = 0;
-                alarmLed = !alarmLed;
+                //alarmLed = !alarmLed;
+                int lectura_leds = leds.read();
+                int lectura_alarmLed = (lectura_leds & 0b100) >> 2;
+                leds.write( (!lectura_alarmLed << 2) | (lectura_leds & 0b011));
             }
         } else if ( overTempDetectorState ) {
             if( accumulatedTimeAlarm >= BLINKING_TIME_OVER_TEMP_ALARM  ) {
                 accumulatedTimeAlarm = 0;
-                alarmLed = !alarmLed;
+                //alarmLed = !alarmLed;
+                int lectura_leds = leds.read();
+                int lectura_alarmLed = (lectura_leds & 0b100) >> 2;
+                leds.write( (!lectura_alarmLed << 2) | (lectura_leds & 0b011));
             }
         }
     } else{
-        alarmLed = OFF;
+        //alarmLed = OFF;
+        leds.write( leds.read() & 0b011 );
         gasDetectorState = OFF;
         overTempDetectorState = OFF;
         sirenPin.input();                                  
     }
 }
+#endif  //TEST_1
 
 #if TEST_X == TEST_ORIGINAL
 void alarmDeactivationUpdate()
@@ -267,9 +344,11 @@ void alarmDeactivationUpdate()
 {
     if ( numberOfIncorrectCodes < 5 ) {
         if ( buttonBus == 0xF && !enterButton ) {
-            incorrectCodeLed = OFF;
+            //incorrectCodeLed = OFF;
+            leds.write( leds.read() & 0b110 );
         }
-        if ( enterButton && !incorrectCodeLed && alarmState ) {
+        //if ( enterButton && !incorrectCodeLed && alarmState ) {
+        if ( enterButton && (!(leds.read() & 0b001) & 0b001) && alarmState ) {
             //buttonsPressed[0] = aButton;
             //buttonsPressed[1] = bButton;
             //buttonsPressed[2] = cButton;
@@ -282,12 +361,14 @@ void alarmDeactivationUpdate()
                 alarmState = OFF;
                 numberOfIncorrectCodes = 0;
             } else {
-                incorrectCodeLed = ON;
+                //incorrectCodeLed = ON;
+                leds.write( leds.read() | 0b001 );
                 numberOfIncorrectCodes++;
             }
         }
     } else {
-        systemBlockedLed = ON;
+        //systemBlockedLed = ON;
+        leds.write( leds.read() | 0b010 );
     }
 }
 #endif  //TEST_1
@@ -360,11 +441,21 @@ void uartTask()
             if ( incorrectCode == false ) {
                 uartUsb.write( "\r\nThe code is correct\r\n\r\n", 25 );
                 alarmState = OFF;
+                #if TEST_X == TEST_ORIGINAL
                 incorrectCodeLed = OFF;
+                #endif
+                #if TEST_X == TEST_1
+                leds.write( leds.read() & 0b110 );
+                #endif
                 numberOfIncorrectCodes = 0;
             } else {
                 uartUsb.write( "\r\nThe code is incorrect\r\n\r\n", 27 );
+                #if TEST_X == TEST_ORIGINAL
                 incorrectCodeLed = ON;
+                #endif
+                #if TEST_X == TEST_1
+                leds.write( leds.read() | 0b001 );
+                #endif
                 numberOfIncorrectCodes++;
             }                
             break;
